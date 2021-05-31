@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# What time zone switch to
+TZONE="Europe/Minsk"
+
 # Message displayed while console login in
 MESSAGE="Unauthorized access to this machine is prohibited
 Press <Ctrl-D> if you are not an authorized user!"
@@ -38,13 +41,17 @@ SERVICE="http"
 
 function timezone_set {
 
-        [[ $(timedatectl) == *"Europe/Minsk"* ]] && echo "Time zone Europe/Minsk is already set" && return 0
-        timedatectl set-timezone Europe/Minsk && echo "Time zone is switched to Europe/Minsk"
+        if [[ "$(timedatectl)" == *$TZONE* ]]; then 
+		echo "Time zone $TZONE is already set"
+	else
+        	timedatectl set-timezone $TZONE
+		echo "Time zone is switched to $TZONE"
+	fi
 }
 
 function chronyd_on {
 
-        if [[ "$(systemctl is-enabled chronyd)" == enabled ]];
+        if [[ $(systemctl is-enabled chronyd) == enabled ]];
         then
                 echo "Chrony service is enabled!"
         else
@@ -68,7 +75,7 @@ function add_message {
 function nginx_config {
 
         #Installing yum-utils
-        if [[ "$(yum list installed)" == "yum-utils"* ]]; then
+        if yum list installed | grep -q "yum-utils"; then
                 echo "yum-utils is already installed! Nothing to do."
         else
                 yum install yum-utils -y > /dev/null
@@ -80,7 +87,7 @@ function nginx_config {
 
 
         #Installing nginx-mainline
-        if [[ "$(yum list installed)" == *"nginx-mainline"* ]]; then
+        if yum list installed | grep -q "nginx-mainline"; then
                 echo "NGINX-mainline is already installed! Nothing to do."
         else
                 echo "Installing NGINX-mainline"
@@ -94,7 +101,7 @@ function nginx_config {
 
 
         #Enabling nginx
-        if [[ "$(systemctl is-enabled nginx)" == enabled ]]; then
+        if [[ $(systemctl is-enabled nginx) == enabled ]]; then
                 echo "NGINX is enabled! Nothing to do"
         else
                 echo "NGINX is disabled and inactive (dead). Enabling and activating..."
@@ -105,7 +112,7 @@ function nginx_config {
 function firewall_add_serv {
 
         if [[ "$(firewall-cmd --list-services)" == *$SERVICE* ]]; then
-                echo "$SERVICE service is alredy added in firewall configuration"
+                echo "$SERVICE service is already added in firewall configuration"
         else
                 echo "Adding $SERVICE service in firewall configuration"
                 firewall-cmd --add-service $SERVICE --permanent >/dev/null 2> /dev/null
