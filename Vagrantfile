@@ -2,7 +2,7 @@ Vagrant.configure("2") do |config|
 
 ################# Configuration of vm-01 ##################
 config.vm.define "vm-01" do |vm1|
-	vm1.vm.box = "devops_lab/centos7" 					# Using custom Vagrant box with name CentOS7
+	vm1.vm.box = "devops_lab/centos7" 			# Using custom Vagrant box of CentOS7
 	vm1.vm.hostname = "vm-01"				# Hostname of this VM
 	vm1.vm.network "private_network", ip: "100.100.100.10"	# IP configuration
 	vm1.vm.provider "virtualbox" do |vb|			# Provider config:	
@@ -16,7 +16,7 @@ end
 
 ################# Configuration of vm-02 ##################
 config.vm.define "vm-02" do |vm2|				
-        vm2.vm.box = "devops_lab/centos8"			# Using custom Vagrant box with name CentOS8
+        vm2.vm.box = "devops_lab/centos8"			# Using custom Vagrant box of CentOS8
         vm2.vm.hostname = "vm-02"				# Hostname of this VM
         vm2.vm.network "private_network", ip: "100.100.100.11"	# IP configuration
 	vm2.vm.provider "virtualbox" do |vb|			# Provider config:
