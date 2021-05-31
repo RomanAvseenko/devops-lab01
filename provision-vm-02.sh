@@ -44,9 +44,10 @@ function add_message {
 
 	echo "$BANNER" | tee /etc/issue > /dev/null
 
-	echo "Banner /etc/issue" | tee -a /etc/ssh/sshd_config > /dev/null
-	systemctl restart sshd
-
+	if ! grep -q "Banner /etc/issue" /etc/ssh/sshd_config; then
+                echo "Banner /etc/issue" | tee -a /etc/ssh/sshd_config > /dev/null
+                systemctl restart sshd
+        fi
 }
 
 function lv_create {
