@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# What time zone switch to
+TZONE="Europe/Minsk"
+
 # Message displayed while console login in
 MESSAGE="Unauthorized access to this machine is prohibited
 Press <Ctrl-D> if you are not an authorized user!"
@@ -15,13 +18,17 @@ BANNER="********************************************************************
 
 function timezone_set {
 
-        [[ $(timedatectl) == *"Europe/Minsk"* ]] && echo "Time zone Europe/Minsk is already set" && return 0
-        timedatectl set-timezone Europe/Minsk && echo "Time zone is switched to Europe/Minsk"
+	if [[ "$(timedatectl)" == *$TZONE* ]]; then
+                echo "Time zone $TZONE is already set"
+        else
+                timedatectl set-timezone $TZONE
+                echo "Time zone is switched to $TZONE"
+        fi
 }
 
 function chronyd_on {
 
-        if [[ "$(systemctl is-enabled chronyd)" == enabled ]];
+        if [[ $(systemctl is-enabled chronyd) == enabled ]];
         then
                 echo "Chrony service is enabled!"
         else
@@ -37,14 +44,22 @@ function add_message {
 
 	echo "$BANNER" | tee /etc/issue > /dev/null
 
-	echo "Banner /etc/issue" | tee -a /etc/ssh/sshd_config > /dev/null
-	systemctl restart sshd
-
+	if ! grep -q "Banner /etc/issue" /etc/ssh/sshd_config; then
+                echo "Banner /etc/issue" | tee -a /etc/ssh/sshd_config > /dev/null
+                systemctl restart sshd
+        fi
 }
 
 function lv_create {
 	
 	echo "Creating logical volumes"
+	
+	# Install LVM2
+	if yum list installed | grep -q "lvm2"; then
+		echo "LVM2 is already installed! Nothing to do."
+	else
+		yum install lvm2 -y &> /dev/null
+	fi
 	
 	#Create physical volume
 	if ! pvs | grep -q "/dev/sdb"; then
@@ -57,35 +72,35 @@ function lv_create {
 	if ! vgs | grep -q "data"; then
         	vgcreate data /dev/sdb > /dev/null
 	else
-        	echo "Volume group "data" is already exists"
+        	echo "Volume group data is already exists"
 	fi
 	
 	#Create logical volume "data01"
 	if ! lvs | grep -q "data01"; then
 		lvcreate -l 20%VG -n data01 data > /dev/null
 	else
-		echo "Logical volume "data01" is already exists"
+		echo "Logical volume data01 is already exists"
 	fi
 	
 	#File system creation for LV data01
-	if ! blkid /dev/mapper/data-data01; then
+	if ! blkid /dev/mapper/data-data01 &> /dev/null; then
 		mkfs.ext4 /dev/mapper/data-data01 &> /dev/null
 	else
-		echo "File system on logical volume "data01" is already exists"
+		echo "File system on logical volume data01 is already exists"
 	fi
 
 	#Create logical volume "data02"
 	if ! lvs |  grep -q "data02"; then
                 lvcreate -l 80%VG -n data02 data > /dev/null
         else
-                echo "Logical volume "data02" is already exists"
+                echo "Logical volume data02 is already exists"
         fi
 	
 	#File system creation for LV data02
-        if ! blkid /dev/mapper/data-data02; then
+        if ! blkid /dev/mapper/data-data02 &> /dev/null; then
                 mkfs.ext3 /dev/mapper/data-data02 &> /dev/null
         else
-                echo "File system on logical volume "data01" is already exists"
+                echo "File system on logical volume data02 is already exists"
         fi
 }
 
@@ -104,7 +119,7 @@ function mnt_lv {
 	
 
 	#Mounting LV to their directories
-	if ! mount | grep -q "/dev/mapper/data-data01"; then
+	if ! grep -q "/dev/mapper/data-data01" /proc/mounts; then
 		if [[ ! -d /data01 ]]; then
 			mkdir /data01
 		else
@@ -115,7 +130,7 @@ function mnt_lv {
 		echo "/data01 is already mounted"
 	fi
 
-	if ! mount | grep -q "/dev/mapper/data-data02"; then
+	if ! grep -q "/dev/mapper/data-data02" /proc/mounts; then
                 if [[ ! -d /data02 ]]; then
                         mkdir /data02
                 else    
