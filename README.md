@@ -16,7 +16,7 @@ ____
 
 1. Clone this repository using
 		
-		git clone https://github.com/RomanAvseenko/devops-lab01.git
+		git clone https://github.com/roman-avseenko/devops-lab01.git
 
 2. Use
 
