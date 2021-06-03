@@ -17,8 +17,14 @@ BANNER="********************************************************************
 
 
 function timezone_set {
+	
+	if ! command -v timedatectl &> /dev/null; then  # Check if timedatectl commant exists
+                echo "timedatectl command not found"
+                exit
+        fi
 
-	if [[ "$(timedatectl)" == *$TZONE* ]]; then
+        if  timedatectl | grep -q "$TZONE"; then
+
                 echo "Time zone $TZONE is already set"
         else
                 timedatectl set-timezone $TZONE
@@ -33,21 +39,19 @@ function chronyd_on {
                 echo "Chrony service is enabled!"
         else
                 echo "Chrony service is disabled and inactive (dead). Enabling and activating..."
-                systemctl enable --now chronyd
+                systemctl enable --now chronyd &> /dev/null
         fi
 }
 
 function add_message {
 	
 	echo "Adding message of a day and banner text"
-	echo "$MESSAGE" | tee /etc/motd > /dev/null
+	
+	echo "$MESSAGE" > /etc/motd
+	echo "$BANNER" > /etc/issue
 
-	echo "$BANNER" | tee /etc/issue > /dev/null
-
-	if ! grep -q "Banner /etc/issue" /etc/ssh/sshd_config; then
-                echo "Banner /etc/issue" | tee -a /etc/ssh/sshd_config > /dev/null
-                systemctl restart sshd
-        fi
+	sed -i 's!.*Banner.*!Banner /etc/issue!g' /etc/ssh/sshd_config	# Add banner file link to sshd_config
+	systemctl restart sshd
 }
 
 function lv_create {

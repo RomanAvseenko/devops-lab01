@@ -41,7 +41,12 @@ SERVICE="http"
 
 function timezone_set {
 
-        if [[ "$(timedatectl)" == *$TZONE* ]]; then 
+	if ! command -v timedatectl &> /dev/null; then	# Check if timedatectl commant exists
+		echo "timedatectl command not found"
+		exit
+	fi
+	
+        if  timedatectl | grep -q "$TZONE"; then 
 		echo "Time zone $TZONE is already set"
 	else
         	timedatectl set-timezone $TZONE
@@ -56,35 +61,32 @@ function chronyd_on {
                 echo "Chrony service is enabled!"
         else
                 echo "Chrony service is disabled and inactive (dead). Enabling and activating..."
-                systemctl enable --now chronyd
+                systemctl enable --now chronyd &> /dev/null
         fi
 }
 
 function add_message {
 	
 	echo "Adding message of a day and banner text"
-	echo "$MESSAGE" | tee /etc/motd > /dev/null
 
-	echo "$BANNER" | tee /etc/issue > /dev/null
-	if ! grep -q "Banner /etc/issue" /etc/ssh/sshd_config; then
-		echo "Banner /etc/issue" | tee -a /etc/ssh/sshd_config > /dev/null
-		systemctl restart sshd
-	fi
+	echo "$MESSAGE" > /etc/motd
+	echo "$BANNER" > /etc/issue
+	
+	sed -i 's!.*Banner.*!Banner /etc/issue!g' /etc/ssh/sshd_config	# Add banner file link to sshd_config
+	systemctl restart sshd
 }
 
 function nginx_config {
 
         #Installing yum-utils
-        if yum list installed | grep -q "yum-utils"; then
+	if ! yum list installed | grep -q "yum-utils"; then
                 echo "yum-utils is already installed! Nothing to do."
         else
                 yum install yum-utils -y > /dev/null
         fi
 
-
         #Configuring nginx repository   
-        echo "$REPOTEXT" | tee /etc/yum.repos.d/nginx.repo > /dev/null
-
+        echo "$REPOTEXT" > /etc/yum.repos.d/nginx.repo
 
         #Installing nginx-mainline
         if yum list installed | grep -q "nginx-mainline"; then
@@ -105,12 +107,16 @@ function nginx_config {
                 echo "NGINX is enabled! Nothing to do"
         else
                 echo "NGINX is disabled and inactive (dead). Enabling and activating..."
-                systemctl enable --now nginx
+                systemctl enable --now nginx &> /dev/null
         fi
 }
 
 function firewall_add_serv {
-
+	
+	if [[ $(systemctl is-enabled firewalld) != enabled ]]; then	# Check is firewall active
+		systemctl enable --now firewalld &> /dev/null
+	fi
+	
         if [[ "$(firewall-cmd --list-services)" == *$SERVICE* ]]; then
                 echo "$SERVICE service is already added in firewall configuration"
         else
