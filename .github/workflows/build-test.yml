@@ -20,10 +20,10 @@ jobs:
  
       - name: Python3 setup
         run:  |
-	  brew install python3
+          brew install python3
           curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
-	  python3 get-pip.py
-      
+          python3 get-pip.py
+	  
       - name: Run vagrant
         run:  vagrant up
 
@@ -32,7 +32,7 @@ jobs:
   
   cleanup: 
     runs-on: self-hosted
-    needs: [build-start-test]
+    needs: [build-and-test]
     if: ${{ always() }} 
     
     steps:
