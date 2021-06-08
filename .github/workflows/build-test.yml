@@ -1,0 +1,40 @@
+name: build-and-test
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: self-hosted
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: VirtualBox setup
+        run:  brew install virtualbox
+
+      - name: Vagrant setup
+        run: brew install vagrant 
+ 
+      - name: Python3 setup
+        run:  |
+	  brew install python3
+          curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+	  python3 get-pip.py
+      
+      - name: Run vagrant
+        run:  vagrant up
+
+      - name: Run tests
+        run:  ./test-vms.sh
+  
+  cleanup: 
+    runs-on: self-hosted
+    needs: [build-start-test]
+    if: ${{ always() }} 
+    
+    steps:
+    - name: Destroy Vagrant VMs
+      run:  vagrant destroy -f
