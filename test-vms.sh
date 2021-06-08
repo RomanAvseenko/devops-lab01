@@ -22,7 +22,7 @@ function vm_test {
   echo "Testing ${1}"
 
   vagrant ssh-config "$1" > ".vagrant/ssh-config-${1}"
-  py.test -v --hosts="${1}" --ssh-config=".vagrant/ssh-config-${1}" test-${1}.py
+  py.test -v --hosts="${1}" --ssh-config=".vagrant/ssh-config-${1}" "test-${1}.py"
 }
 
 testinfra_setup
