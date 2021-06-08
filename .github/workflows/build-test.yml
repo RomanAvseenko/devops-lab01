@@ -23,7 +23,7 @@ jobs:
           brew install python3
           curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
           python3 get-pip.py
-	  
+  
       - name: Run vagrant
         run:  vagrant up
 
